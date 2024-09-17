@@ -11,16 +11,18 @@
 
 namespace Xenon\LaravelBDSms\Provider;
 
+use GuzzleHttp\Exception\GuzzleException;
+use Xenon\LaravelBDSms\Handler\ParameterException;
 use Xenon\LaravelBDSms\Handler\RenderException;
 use Xenon\LaravelBDSms\Request;
 use Xenon\LaravelBDSms\Sender;
 
-class MDL extends AbstractProvider
+class SmartLabSms extends AbstractProvider
 {
-    private string $apiEndpoint  = 'http://premium.mdlsms.com/smsapi';
+    private string $apiEndpoint = 'https://labapi.smartlabsms.com/smsapi';
 
     /**
-     * MDL constructor.
+     * SmartLabSMS constructor.
      * @param Sender $sender
      */
     public function __construct(Sender $sender)
@@ -30,11 +32,12 @@ class MDL extends AbstractProvider
 
     /**
      * Send Request To Api and Send Message
+     * @throws GuzzleException|RenderException
      */
     public function sendRequest()
     {
-        $text = $this->senderObject->getMessage();
         $number = $this->senderObject->getMobile();
+        $text = $this->senderObject->getMessage();
         $config = $this->senderObject->getConfig();
         $queue = $this->senderObject->getQueue();
         $queueName = $this->senderObject->getQueueName();
@@ -42,11 +45,11 @@ class MDL extends AbstractProvider
         $backoff=$this->senderObject->getBackoff();
 
         $query = [
-            'api_key' => $config['api_key'],
-            'type' => $config['type'],
-            'senderid' => $config['senderid'],
-            'contacts' => $number,
-            'msg' => $text,
+            'user' => $config['user'],
+            'password' => $config['password'],
+            'sender' => $config['sender'],
+            'msisdn' => $number,
+            'smstext' => $text,
         ];
 
         $requestObject = new Request($this->apiEndpoint, $query, $queue, [], $queueName,$tries,$backoff);
@@ -64,19 +67,19 @@ class MDL extends AbstractProvider
     }
 
     /**
-     * @throws RenderException
+     * @throws ParameterException
      */
     public function errorException()
     {
-        if (!array_key_exists('api_key', $this->senderObject->getConfig())) {
-            throw new RenderException('api_key is absent in configuration');
+        if (!array_key_exists('user', $this->senderObject->getConfig())) {
+            throw new ParameterException('user key is absent in configuration');
         }
-        if (!array_key_exists('type', $this->senderObject->getConfig())) {
-            throw new RenderException('type key is absent in configuration');
-        }
-        if (!array_key_exists('senderid', $this->senderObject->getConfig())) {
-            throw new RenderException('senderid key is absent in configuration');
+        if (!array_key_exists('password', $this->senderObject->getConfig())) {
+            throw new ParameterException('password key is absent in configuration');
         }
 
+        if (!array_key_exists('sender', $this->senderObject->getConfig())) {
+            throw new ParameterException('sender key is absent in configuration');
+        }
     }
 }
